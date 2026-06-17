@@ -1,0 +1,28 @@
+
+================ AI INTERVIEW REPORT ================
+
+Candidate Name    : Jaziya Nizar
+
+Eye Contact Score : 90.99%
+
+Dominant Emotion  : sad
+
+Dominant Head Pose: left
+
+Final Score       : 69.50
+
+Word count        : 0
+
+Filler Words      : 0
+
+Confidence Score  : 0%
+
+Words Per Minute  : 0
+
+Speech Transcript : 
+
+AI Feedback       : ['✅Maintained excellent eye contact.', '❌Appeared nervous during the interview.', '⚠️Try keeping your face directed toward the interviewer.', '❌Work on reducing filler words and improving fluency.', '❌Speaking pace was too slow.']
+
+Overall Rating    : Good
+
+=====================================================
