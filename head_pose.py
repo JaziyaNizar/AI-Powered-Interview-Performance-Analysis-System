@@ -19,7 +19,7 @@ def get_head_pose(frame):
     results = mp_face_mesh.process(rgb)
 
     if not results.multi_face_landmarks:
-        return "no_face"
+        return "No Face"
 
     face = results.multi_face_landmarks[0].landmark
 
