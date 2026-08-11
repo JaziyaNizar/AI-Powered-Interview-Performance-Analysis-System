@@ -30,7 +30,7 @@ Word count        : {word_count}
 
 Filler Words      : {filler_count}
 
-Confidence Score  : {confidence_score}%
+Speech Fluency Score : {confidence_score}%
 
 Words Per Minute  : {wpm}
 
