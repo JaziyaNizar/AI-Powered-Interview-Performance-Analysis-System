@@ -2,6 +2,20 @@ import streamlit as st
 import base64
 import matplotlib.pyplot as plt
 
+from camera_analysis import ( 
+        start_camera,
+        get_analysis_result,
+        reset_analysis,
+        get_audio_frames,
+        reset_audio,
+        get_audio_status
+)
+
+from speech_to_text import get_speech_text
+from speech_analysis import analyze_speech
+from feedback_generator import generate_feedback
+from report_generator import generate_report
+
 # PAGE CONFIG 
 
 st.set_page_config(
@@ -26,6 +40,9 @@ if "report_data" not in st.session_state:
 
 if "transcript" not in st.session_state:
     st.session_state.transcript = ""
+
+if "interview_started" not in st.session_state:
+    st.session_state.interview_started = False
 
 
 
@@ -160,11 +177,23 @@ elif st.session_state.page == "candidate":
             if not candidate_name.strip() or not roll_number.strip():
                 st.error("⚠️ Please fill in both Candidate Name and Roll Number before proceeding.")
             else:
+
                 st.session_state.candidate_name = candidate_name
                 st.session_state.roll_number = roll_number
-                st.session_state.report_data = None  
-                st.session_state.transcript = ""      
+
+                st.session_state.report_data = None
+                st.session_state.transcript = ""
+
+                # Reset camera analysis for the new interview
+                reset_analysis()
+                reset_audio()
+
+                # Reset interview status
+                st.session_state.interview_started = False
+
+
                 st.session_state.page = "interview"
+
                 st.rerun()
 
 
@@ -173,43 +202,244 @@ elif st.session_state.page == "candidate":
 
 elif st.session_state.page == "interview":
 
-    st.title("AI Interview Analysis")
+    st.title("AI Interview Performance Assessment")
 
     st.success(
-        f"Candidate : {st.session_state.candidate_name}"
+        f"Candidate: {st.session_state.candidate_name}"
     )
 
     st.markdown("---")
 
-    st.write("""
-    Click the button below to start the interview.
+    st.markdown("### Interview Instructions")
 
-    During the interview:
-    - Eye Contact Detection runs
-    - Emotion Detection runs
-    - Head Pose Detection runs
-    - Speech-to-Text runs
-    - Speech Analysis runs
-    
-    Press 'S' to speak something...
-    
-    Press 'Q' in the OpenCV window to finish the interview.
+    st.write("""
+    This assessment evaluates selected visual and speech-based communication indicators during your interview session.
+
+    **During the assessment, the system will analyze:**
+
+    - 👁️ **Eye Contact**
+    - 🙂 **Facial Expression** 
+    - 🧑 **Head Posture** 
+    - 🎤 **Speech Performance**
+    - 📝 **Speech Transcript**
+
+    For the best results, sit in a well-lit environment, keep your face clearly visible, position yourself directly in front of the camera, and speak clearly at a natural pace.
     """)
 
-    if st.button("START INTERVIEW", use_container_width=True):
+    st.info(
+        "When you are ready, click START in the camera window below and allow camera and microphone access."
+    )
 
-        from camera_analysis import run_analysis
+    st.markdown("### Interview Session")
 
-        result = run_analysis(
-            st.session_state.candidate_name
+    ctx = start_camera()
+
+
+    if ctx.state.playing:
+
+        st.session_state.interview_started = True
+
+        st.success(
+            "● Interview session in progress — camera and microphone are active."
         )
 
-        st.session_state.report_data = result
-        st.session_state.transcript=result.get("transcript", "")
+        audio_count = get_audio_status()
 
-        st.session_state.page = "report"
+        if audio_count > 0:
 
-        st.rerun()
+            st.caption(
+                "🎤 Microphone connected and audio is being captured."
+            )
+
+        else:
+
+            st.caption(
+                "🎤 Waiting for microphone audio..."
+            )
+
+    else:
+
+        if st.session_state.interview_started:
+
+            st.success(
+                "Interview session stopped. Click FINISH INTERVIEW to generate your assessment report."
+            )
+
+        else:
+
+            st.info(
+                "The interview has not started. Click START in the camera window when you are ready."
+            )
+
+
+    if st.button(
+        "FINISH INTERVIEW",
+        use_container_width=True
+    ):
+
+        if ctx.state.playing:
+
+            st.warning(
+                "Please click STOP in the camera window before selecting FINISH INTERVIEW."
+            )
+
+        else:
+
+            result = get_analysis_result()
+
+            # Get recorded browser microphone audio
+            audio = get_audio_frames()
+
+            # Convert speech to text
+            transcript, speaking_time = get_speech_text(audio)
+
+            result["transcript"] = transcript
+
+            print(
+                "Actual interview duration:",
+                round(speaking_time, 2),
+                "seconds"
+            )
+
+            # Analyze speech using actual duration
+            speech_result = analyze_speech(
+                transcript,
+                speaking_time
+            )
+
+            result["word_count"] = speech_result["word_count"]
+            result["filler_count"] = speech_result["filler_count"]
+            result["confidence_score"] = speech_result["confidence_score"]
+            result["wpm"] = speech_result["wpm"]
+
+            
+            # SPEAKING PACE SCORE
+
+            wpm = result["wpm"]
+
+            if wpm == 0:
+                pace_score = 0
+
+            elif 90 <= wpm <= 160:
+                pace_score = 100
+
+            elif 75 <= wpm < 90:
+                pace_score = 80
+
+            elif 60 <= wpm < 75:
+                pace_score = 60
+
+            elif 160 < wpm <= 180:
+                pace_score = 80
+
+            elif 180 < wpm <= 200:
+                pace_score = 60
+
+            else:
+                pace_score = 40
+
+            result["pace_score"] = pace_score
+
+           
+            # FACIAL EXPRESSION SCORE
+
+            emotion_score_map = {
+                "happy": 100,
+                "neutral": 90,
+                "surprise": 70,
+                "sad": 50,
+                "fear": 50,
+                "angry": 40,
+                "disgust": 40
+            }
+
+            emotion_score = emotion_score_map.get(
+                result["dominant_emotion"],
+                50
+            )
+
+            result["emotion_score"] = emotion_score
+
+
+            
+            # HEAD POSTURE SCORE
+            head_pose_score_map = {
+                "center": 100,
+                "left": 70,
+                "right": 70,
+                "up": 60,
+                "down": 50,
+                "No Face": 0
+            }
+
+            head_pose_score = head_pose_score_map.get(
+                result["dominant_pose"],
+                50
+            )
+
+            result["head_pose_score"] = head_pose_score
+
+            # FINAL INTERVIEW SCORE
+            final_score = (
+                0.30 * result["eye_score"]
+                + 0.15 * result["emotion_score"]
+                + 0.15 * result["head_pose_score"]
+                + 0.25 * result["confidence_score"]
+                + 0.15 * result["pace_score"]
+            )
+
+            result["final_score"] = round(
+                final_score,
+                2
+            )
+
+
+            feedback = generate_feedback(
+                result["eye_score"],
+                result["dominant_emotion"],
+                result["dominant_pose"],
+                result["confidence_score"],
+                result["wpm"]
+            )
+
+            result["feedback"] = feedback
+
+            if result["final_score"] >= 80:
+                result["rating"] = "Excellent"
+
+            elif result["final_score"] >= 60:
+                result["rating"] = "Good"
+
+            elif result["final_score"] >= 40:
+                result["rating"] = "Average"
+
+            else:
+                result["rating"] = "Needs Improvement"
+
+           
+            # GENERATE UPDATED REPORT FILE
+            generate_report(
+                st.session_state.candidate_name,
+                result["eye_score"],
+                result["dominant_emotion"],
+                result["dominant_pose"],
+                result["final_score"],
+                result["transcript"],
+                result["word_count"],
+                result["filler_count"],
+                result["confidence_score"],
+                result["wpm"],
+                result["feedback"],
+                result["rating"]
+            )
+
+            st.session_state.report_data = result
+
+            st.session_state.transcript = ""
+
+            st.session_state.page = "report"
+
+            st.rerun()
 
 elif st.session_state.page == "report":
 
@@ -224,8 +454,6 @@ elif st.session_state.page == "report":
     st.write(f"### Candidate Name")
     st.write(st.session_state.candidate_name)
 
-    # st.write(f"### Roll Number")
-    # st.write(st.session_state.roll_number)
 
     st.markdown("---")
 
@@ -283,7 +511,7 @@ elif st.session_state.page == "report":
     st.write(f"### Filler Words")
     st.write(report['filler_count'])
 
-    st.write(f"### Confidence Score")
+    st.write(f"### Speech Fluency Score")
     st.write(f"{report['confidence_score']}%")
 
     st.write("### Words Per Minute")
@@ -291,18 +519,25 @@ elif st.session_state.page == "report":
 
     st.markdown("---")
 
+
+    # TRANSCRIPT
     st.write("### Transcript")
 
-    st.write("### AI Feedback")
-    for item in report['feedback']:
-        st.write(item)
-    
     st.text_area(
-    "Speech Transcript",
-    value=st.session_state.transcript,
-    height=200,
-    key="transcript_box")
+        "Speech Transcript",
+        value=report["transcript"],
+        height=200
+    )
 
+   
+    # AI FEEDBACK
+    st.write("### AI Feedback")
+
+    for item in report["feedback"]:
+        st.write(item)
+
+
+    # FINAL SCORE
     score = report["final_score"]
 
     st.markdown("## Final Interview Score")
@@ -378,224 +613,3 @@ elif st.session_state.page == "report":
 
 
 
-# # import cv2
-# # import time
-# # from eye_contact import detect_eye_contact
-# # from emotion_test import detect_emotion
-# # from head_pose import get_head_pose
-# # from speech_to_text import get_speech_text
-# # from report_generator import generate_report
-# # from speech_analysis import analyze_speech
-
-# # # ---------------- SCORE TRACKING VARIABLES ----------------
-
-# # total_frames = 0
-# # eye_contact_frames = 0
-
-# # emotion_count = {
-# #     "happy": 0,
-# #     "neutral": 0,
-# #     "sad": 0,
-# #     "angry": 0,
-# #     "fear": 0,
-# #     "surprise": 0,
-# #     "disgust": 0
-# # }
-
-# # head_pose_count = {
-# #     "forward": 0,
-# #     "left": 0,
-# #     "right": 0,
-# #     "down": 0
-# # }
-
-# # speech_text = ""
-# # full_transcript = ""
-# # last_speech_time = time.time()
-
-# # # ---------------- EYE CONTACT SCORE ----------------
-
-# # def get_eye_contact_score():
-# #     if total_frames == 0:
-# #         return 0
-# #     return (eye_contact_frames / total_frames) * 100
-
-
-# # # ---------------- DOMINANT EMOTION ----------------
-
-# # def get_dominant_emotion():
-# #     return max(emotion_count, key=emotion_count.get)
-
-
-# # # ---------------- DOMINANT HEAD POSE ----------------
-
-# # def get_dominant_head_pose():
-# #     return max(head_pose_count, key=head_pose_count.get)
-
-
-# # # ---------------- FINAL SCORE CALCULATION ----------------
-
-# # def calculate_final_score():
-# #     eye_score = get_eye_contact_score()
-
-# #     emotion_weights = {
-# #         "happy": 100,
-# #         "neutral": 60,
-# #         "surprise": 70,
-# #         "sad": 40,
-# #         "angry": 30,
-# #         "fear": 20,
-# #         "disgust": 20
-# #     }
-
-# #     dominant_emotion = get_dominant_emotion()
-# #     emotion_score = emotion_weights.get(dominant_emotion, 60)
-
-# #     # head pose impact
-# #     dominant_pose = get_dominant_head_pose()
-# #     head_pose_score_map = {
-# #         "forward": 100,
-# #         "left": 60,
-# #         "right": 60,
-# #         "down": 30
-# #     }
-
-# #     head_pose_score = head_pose_score_map.get(dominant_pose, 60)
-
-# #     # FINAL WEIGHTED SCORE
-# #     final_score = (
-# #         0.5 * eye_score +
-# #         0.3 * emotion_score +
-# #         0.2 * head_pose_score
-# #     )
-
-# #     return final_score, dominant_emotion, dominant_pose
-
-
-# # # ---------------- MAIN PIPELINE ----------------
-
-# # def run_analysis():
-# #     global total_frames, eye_contact_frames
-# #     global speech_text,full_transcript,last_speech_time
-
-# #     cap = cv2.VideoCapture(0)
-
-# #     while True:
-# #         ret, frame = cap.read()
-# #         if not ret:
-# #             break
-
-# #         frame = cv2.flip(frame, 1)
-
-# #         # ---------------- EYE CONTACT ----------------
-# #         eye_contact = detect_eye_contact(frame)
-
-# #         total_frames += 1
-# #         if eye_contact:
-# #             eye_contact_frames += 1
-
-# #         # ---------------- EMOTION ----------------
-# #         emotion = detect_emotion(frame)
-
-# #         if emotion in emotion_count:
-# #             emotion_count[emotion] += 1
-
-# #         # ---------------- HEAD POSE ----------------
-# #         head_pose = get_head_pose(frame)
-
-# #         if head_pose in head_pose_count:
-# #             head_pose_count[head_pose] += 1
-        
-# #         # ---------------- SPEECH TO TEXT ----------------
-# #         current_time = time.time()
-
-# #         if current_time - last_speech_time > 10:
-
-# #             speech_text = get_speech_text()
-
-# #             if speech_text not in [
-# #                 "Could not understand",
-# #                 "Speech service unavailable"
-# #             ]:
-# #                 full_transcript += speech_text + " "
-
-# #             last_speech_time = current_time
-
-# #         # ---------------- FINAL SCORE ----------------
-# #         final_score, dominant_emotion, dominant_pose = calculate_final_score()
-
-# #         # ---------------- DISPLAY ----------------
-# #         cv2.putText(frame, f"Eye Contact: {eye_contact}",
-# #                     (30, 50), cv2.FONT_HERSHEY_SIMPLEX,
-# #                     0.8, (0, 255, 0), 2)
-
-# #         cv2.putText(frame, f"Emotion: {emotion}",
-# #                     (30, 90), cv2.FONT_HERSHEY_SIMPLEX,
-# #                     0.8, (255, 0, 0), 2)
-
-# #         cv2.putText(frame, f"Head Pose: {head_pose}",
-# #                     (30, 130), cv2.FONT_HERSHEY_SIMPLEX,
-# #                     0.8, (0, 200, 255), 2)
-
-# #         cv2.putText(frame, f"Final Score: {int(final_score)}",
-# #                     (30, 170), cv2.FONT_HERSHEY_SIMPLEX,
-# #                     0.8, (0, 255, 255), 2)
-        
-# #         cv2.putText(frame,
-# #                     f"Speech: {speech_text[:40]}",
-# #                     (30, 210),
-# #                     cv2.FONT_HERSHEY_SIMPLEX,
-# #                     0.6,
-# #                     (255, 255, 255),
-# #                     2)
-
-# #         cv2.imshow("AI Interview Analysis", frame)
-
-# #         if cv2.waitKey(1) & 0xFF == ord('q'):
-# #             break
-
-# #     cap.release()
-# #     cv2.destroyAllWindows()
-
-# #     # ---------------- FINAL REPORT ----------------
-# #     final_score, dominant_emotion, dominant_pose = calculate_final_score()
-
-# #     #analyze speech transcript
-# #     speech_result=analyze_speech(full_transcript)
-
-# #     word_count=speech_result['word_count']
-# #     filler_count=speech_result['filler_count']
-# #     confidence_score=speech_result['confidence_score']
-
-
-# #     generate_report(
-# #         get_eye_contact_score(),
-# #         dominant_emotion,
-# #         dominant_pose,
-# #         final_score,
-# #         full_transcript,
-# #         word_count,
-# #         filler_count,
-# #         confidence_score
-# #     )
-
-# #     print("\n================ FINAL REPORT ================")
-# #     print(f"Eye Contact Score: {get_eye_contact_score():.2f}")
-# #     print(f"Dominant Emotion: {dominant_emotion}")
-# #     print(f"Dominant Head Pose: {dominant_pose}")
-# #     print(f"Final Interview Score: {final_score:.2f}")
-
-# #     print(f"Word Count: {word_count}")
-# #     print(f"Filler Words: {filler_count}")
-# #     print(f"Confidence Score: {confidence_score}%")
-    
-
-# #     print("\nSpeech Transcript:")
-# #     print(full_transcript)
-
-# #     print("=============================================")
-
-# # # ---------------- RUN PROGRAM ----------------
-
-# # if __name__ == "__main__":
-# #     run_analysis()...this is my code in camera analysis.py
