@@ -27,4 +27,4 @@ The system generates a structured interview performance assessment including **e
 
 ## 🌐 Live Demo
 
-**Application Link:** Coming Soon
+**Application Link:** https://ai-powered-interview-performance-analysis-system.streamlit.app/
