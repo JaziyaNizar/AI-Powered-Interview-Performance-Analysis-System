@@ -56,7 +56,9 @@ def get_base64(file_path):
 img = get_base64("intervw_img.png")
 
 
-#  COMMON BACKGROUND
+# ------------------------------------------------
+# COMMON BACKGROUND AND GLOBAL STYLING
+# ------------------------------------------------
 
 st.markdown(
     f"""
@@ -99,33 +101,35 @@ st.markdown(
         margin-top: 30px;
         text-shadow: 3px 3px 12px black;
     }}
-    /* =========================================
-       TEXT VISIBILITY FIX
-       ========================================= */
 
-    h1, h2, h3, h4, h5, h6 {
-        color: #FFFFFF !important;
-    }
+    /* -----------------------------------------
+       TEXT VISIBILITY
+       ----------------------------------------- */
 
-    p, span, label {
+    h1, h2, h3, h4, h5, h6 {{
         color: #FFFFFF !important;
-    }
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+    }}
 
-    [data-testid="stMarkdownContainer"] {
+    [data-testid="stMarkdownContainer"] {{
         color: #FFFFFF !important;
-    }
+    }}
 
-    [data-testid="stMarkdownContainer"] p {
+    [data-testid="stMarkdownContainer"] p {{
         color: #FFFFFF !important;
-    }
+    }}
 
-    [data-testid="stMetricLabel"] {
+    [data-testid="stMarkdownContainer"] li {{
         color: #FFFFFF !important;
-    }
+    }}
 
-    [data-testid="stMetricValue"] {
+    [data-testid="stMetricLabel"] {{
         color: #FFFFFF !important;
-    }
+    }}
+
+    [data-testid="stMetricValue"] {{
+        color: #FFFFFF !important;
+    }}
 
     </style>
     """,
