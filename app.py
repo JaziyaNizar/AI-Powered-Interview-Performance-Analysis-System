@@ -99,6 +99,33 @@ st.markdown(
         margin-top: 30px;
         text-shadow: 3px 3px 12px black;
     }}
+    /* =========================================
+       TEXT VISIBILITY FIX
+       ========================================= */
+
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF !important;
+    }
+
+    p, span, label {
+        color: #FFFFFF !important;
+    }
+
+    [data-testid="stMarkdownContainer"] {
+        color: #FFFFFF !important;
+    }
+
+    [data-testid="stMarkdownContainer"] p {
+        color: #FFFFFF !important;
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #FFFFFF !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #FFFFFF !important;
+    }
 
     </style>
     """,
