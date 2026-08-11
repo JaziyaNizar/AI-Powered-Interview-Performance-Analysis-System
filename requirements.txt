@@ -2,19 +2,12 @@ streamlit==1.58.0
 streamlit-webrtc==0.72.1
 
 numpy==1.26.4
-pandas==3.0.3
-matplotlib==3.10.9
-pillow==12.2.0
 
 opencv-python-headless==4.8.1.78
-mediapipe==0.10.20
+mediapipe==0.10.11
 
 tensorflow==2.15.0
-tf-keras==2.15.0
 deepface==0.0.100
 
 SpeechRecognition==3.16.1
-
-scipy==1.17.1
-requests==2.34.2
-python-dotenv==1.2.2
+av==16.1.0
