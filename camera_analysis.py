@@ -2,7 +2,9 @@ import cv2
 import av
 import threading
 import numpy as np
+import streamlit as st
 
+from twilio.rest import Client
 from av.audio.resampler import AudioResampler
 from streamlit_webrtc import webrtc_streamer
 from speech_to_text import get_speech_text
@@ -358,11 +360,53 @@ def get_analysis_result():
         "head_pose_count": head_pose_count,
     }
 
-
-
 # START CAMERA
 def start_camera():
 
+    try:
+       
+        # TWILIO STUN / TURN CONFIGURATION
+        account_sid = st.secrets["TWILIO_ACCOUNT_SID"]
+        auth_token = st.secrets["TWILIO_AUTH_TOKEN"]
+
+        client = Client(
+            account_sid,
+            auth_token
+        )
+
+        token = client.tokens.create(
+            ttl=3600
+        )
+
+        rtc_configuration = {
+            "iceServers": token.ice_servers
+        }
+
+        print(
+            "Twilio TURN configuration loaded successfully"
+        )
+
+    except Exception as e:
+
+        print(
+            "Twilio TURN configuration error:",
+            e
+        )
+
+        # FALLBACK GOOGLE STUN
+        rtc_configuration = {
+            "iceServers": [
+                {
+                    "urls": [
+                        "stun:stun.l.google.com:19302"
+                    ]
+                }
+            ]
+        }
+
+
+    # START WEBRTC CAMERA + MICROPHONE
+    
     ctx = webrtc_streamer(
 
         key="interview-camera",
@@ -376,15 +420,7 @@ def start_camera():
             "audio": True,
         },
 
-        rtc_configuration={
-            "iceServers": [
-                {
-                    "urls": [
-                        "stun:stun.l.google.com:19302"
-                    ]
-                }
-            ]
-        },
+        rtc_configuration=rtc_configuration,
 
     )
 
