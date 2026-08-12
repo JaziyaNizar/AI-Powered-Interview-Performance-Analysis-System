@@ -11,3 +11,5 @@ deepface==0.0.100
 
 SpeechRecognition==3.16.1
 av==16.1.0
+
+twilio
