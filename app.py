@@ -56,9 +56,7 @@ def get_base64(file_path):
 img = get_base64("intervw_img.png")
 
 
-# ------------------------------------------------
 # COMMON BACKGROUND AND GLOBAL STYLING
-# ------------------------------------------------
 
 st.markdown(
     f"""
@@ -129,6 +127,58 @@ st.markdown(
 
     [data-testid="stMetricValue"] {{
         color: #FFFFFF !important;
+    }}
+
+
+    /* -----------------------------------------
+       NORMAL BUTTON VISIBILITY FIX
+       ----------------------------------------- */
+
+    .stButton > button {{
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }}
+
+    .stButton > button p,
+    .stButton > button span {{
+        color: #000000 !important;
+    }}
+
+    .stButton > button:hover {{
+        color: #000000 !important;
+        background-color: #F0F0F0 !important;
+    }}
+
+    .stButton > button:hover p,
+    .stButton > button:hover span {{
+        color: #000000 !important;
+    }}
+
+
+    /* -----------------------------------------
+       DOWNLOAD BUTTON VISIBILITY FIX
+       ----------------------------------------- */
+
+    .stDownloadButton > button {{
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }}
+
+    .stDownloadButton > button p,
+    .stDownloadButton > button span {{
+        color: #000000 !important;
+    }}
+
+    .stDownloadButton > button:hover {{
+        color: #000000 !important;
+        background-color: #F0F0F0 !important;
+    }}
+
+    .stDownloadButton > button:hover p,
+    .stDownloadButton > button:hover span {{
+        color: #000000 !important;
     }}
 
     </style>
