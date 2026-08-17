@@ -4,7 +4,7 @@ import threading
 import numpy as np
 import streamlit as st
 
-from twilio.rest import Client
+
 from av.audio.resampler import AudioResampler
 from streamlit_webrtc import webrtc_streamer
 from speech_to_text import get_speech_text
@@ -365,25 +365,39 @@ def start_camera():
 
     try:
 
-        account_sid = st.secrets["TWILIO_ACCOUNT_SID"]
-        auth_token = st.secrets["TWILIO_AUTH_TOKEN"]
-
-        client = Client(
-            account_sid,
-            auth_token
-        )
-
-        token = client.tokens.create(
-            ttl=3600
-        )
+        turn_username = st.secrets["TURN_USERNAME"]
+        turn_credential = st.secrets["TURN_CREDENTIAL"]
 
         rtc_configuration = {
-            "iceServers": token.ice_servers,
-            "iceTransportPolicy": "relay"
+            "iceServers": [
+                {
+                    "urls": "stun:stun.relay.metered.ca:80"
+                },
+                {
+                    "urls": "turn:global.relay.metered.ca:80",
+                    "username": turn_username,
+                    "credential": turn_credential
+                },
+                {
+                    "urls": "turn:global.relay.metered.ca:80?transport=tcp",
+                    "username": turn_username,
+                    "credential": turn_credential
+                },
+                {
+                    "urls": "turn:global.relay.metered.ca:443",
+                    "username": turn_username,
+                    "credential": turn_credential
+                },
+                {
+                    "urls": "turns:global.relay.metered.ca:443?transport=tcp",
+                    "username": turn_username,
+                    "credential": turn_credential
+                }
+            ]
         }
 
         st.success(
-            "TURN server connected successfully."
+            "TURN server configuration loaded successfully."
         )
 
     except Exception as e:
@@ -395,28 +409,20 @@ def start_camera():
         rtc_configuration = {
             "iceServers": [
                 {
-                    "urls": [
-                        "stun:stun.l.google.com:19302"
-                    ]
+                    "urls": "stun:stun.relay.metered.ca:80"
                 }
             ]
         }
 
     ctx = webrtc_streamer(
-
         key="interview-camera",
-
         video_frame_callback=video_frame_callback,
-
         audio_frame_callback=audio_frame_callback,
-
         media_stream_constraints={
             "video": True,
             "audio": True,
         },
-
         rtc_configuration=rtc_configuration,
-
     )
 
     return ctx
