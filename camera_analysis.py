@@ -364,8 +364,7 @@ def get_analysis_result():
 def start_camera():
 
     try:
-       
-        # TWILIO STUN / TURN CONFIGURATION
+
         account_sid = st.secrets["TWILIO_ACCOUNT_SID"]
         auth_token = st.secrets["TWILIO_AUTH_TOKEN"]
 
@@ -379,21 +378,20 @@ def start_camera():
         )
 
         rtc_configuration = {
-            "iceServers": token.ice_servers
+            "iceServers": token.ice_servers,
+            "iceTransportPolicy": "relay"
         }
 
-        print(
-            "Twilio TURN configuration loaded successfully"
+        st.success(
+            "TURN server connected successfully."
         )
 
     except Exception as e:
 
-        print(
-            "Twilio TURN configuration error:",
-            e
+        st.error(
+            f"TURN configuration failed: {e}"
         )
 
-        # FALLBACK GOOGLE STUN
         rtc_configuration = {
             "iceServers": [
                 {
@@ -404,9 +402,6 @@ def start_camera():
             ]
         }
 
-
-    # START WEBRTC CAMERA + MICROPHONE
-    
     ctx = webrtc_streamer(
 
         key="interview-camera",
